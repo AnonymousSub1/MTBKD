@@ -32,7 +32,7 @@ for multiple label data we used:
 nohup python ESM_8M_inference_p.py --epoch 200 --batch_size 64 --testdata_dir "./data/data_MuLabel_sub.csv" --pred_dir './result_pred_p_mix_weighted_Mul' --LMC_params './LMC_params_mix_weighted/' > ./log_pred/ESM_8M_inference_epoch200_mix_weighte_Mul.log < /dev/null &
 
 
-The evaluation is available in [pred_deviance_infer_git.ipynb](https://github.com/AnonymousSub1/MTBKD/blob/main/pred_deviance_infer_git.ipynb)
+The evaluation is available in jupyter notebook [pred_deviance_infer_git.ipynb](https://github.com/AnonymousSub1/MTBKD/blob/main/pred_deviance_infer_git.ipynb)
 
 
 
