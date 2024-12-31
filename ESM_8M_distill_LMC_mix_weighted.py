@@ -40,20 +40,18 @@ import argparse
 
 ## pars
 def get_args_parser():
-    parser = argparse.ArgumentParser('Set YOLOS', add_help=False)
-    parser.add_argument('--lr', default=1e-4, type=float,
+    parser = argparse.ArgumentParser('Set BKD', add_help=False)
+    parser.add_argument('--lr', default=3e-4, type=float,
                         help='learning rate')
-    # parser.add_argument('--KD', action='store_true',
-    #                     help='use KD or not (default: True)')
     parser.add_argument('--lr_drop', default=0.1, type=float)  
     parser.add_argument('--epoch', default=300, type=int)  
-    parser.add_argument('--KD_epoch', default=50, type=int)  
+    parser.add_argument('--KD_epoch', default=120, type=int)  
     parser.add_argument('--num_classes', default=10, type=int)
     parser.add_argument('--hidden_size', default=128, type=int)
-    parser.add_argument('--alpha',default=0.3, type=float)
-    parser.add_argument('--epsilon_1',default=1e-1, type=float)
-    parser.add_argument('--epsilon_2',default=1e-3, type=float)
-    parser.add_argument('--T',default=8, type=int,
+    parser.add_argument('--alpha',default=10, type=float)
+    parser.add_argument('--epsilon_1',default=8e-8, type=float)
+    parser.add_argument('--epsilon_2',default=4e-4, type=float)
+    parser.add_argument('--T',default=2, type=int,
                         help='temperature of KD loss')
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--batch_size', default=32, type=int)
@@ -61,17 +59,11 @@ def get_args_parser():
     parser.add_argument('--device', default='cuda')
     
     parser.add_argument('--path_plot',default='./plot_student/')
-    # parser.add_argument('--pretrained_teacher_dir',default='./teacher_model_pretrain/pretrain_500epoch.pth')
-    # parser.add_argument('--pretrained_teacher_dir_T2',default='./teacher_model_pretrain_T2/pretrain_500epoch.pth')
-    # parser.add_argument('--pretrained_teacher_dir_T3',default='./teacher_model_pretrain_T3/pretrain_500epoch.pth')
     parser.add_argument('--student_dir',default='./student_model_distill/')
     parser.add_argument('--LMC_params',default='./LMC_params_mix_weighted/')
     parser.add_argument('--traindata_dir',default="./Datasets/deeploc/data_our/data_our_train.csv")
     parser.add_argument('--testdata_dir',default="./Datasets/deeploc/data_our/data_our_test.csv")
     
-    ## dataset
-    # parser.add_argument('--dataset_test',default='mnist_m')
-
     return parser
   
   
@@ -137,9 +129,7 @@ def main(args):
 
   model = ProteinClassifier(esm_model, args.hidden_size, args.num_classes)
   
-  # checkpoint = torch.load("./student_model_distill_KD_mix_weighted_v4_trr/student_orig_KD_100epoch.pth")
-  # model.load_state_dict(checkpoint['model_state_dict'])
-  
+
   model = model.to(device)
   
   print("-----Teacher model structure:")
@@ -157,16 +147,6 @@ def main(args):
   loss_function = nn.CrossEntropyLoss()
   optimizer = torch.optim.Adam(model.classifier.parameters(), lr=args.lr, weight_decay=1e-5)
   
-  # # Run the initial training loop
-  # random.seed(2023)
-  # print('--------Start the initial trining!')
-  # start_time=time.time()
-  # for epoch_init in range(5): # 
-  #   base_MSE_init_model = train_one_epoch(train_loader, model, loss_function, optimizer, device)
-  #   print('EPOCH: %d   Base Train Loss Initial: %.4f   Whole Used Time: %s'
-  #         %(epoch_init, base_MSE_init_model, str(datetime.timedelta(seconds=int(time.time()-start_time)))))
-
-
   # Run the training loop
   random.seed(2024)
   train_MSE_list = []; val_MSE_list = []; test_MSE_list = []; 
@@ -323,50 +303,6 @@ class ProteinDataset_KD(Dataset):
         return inputs, torch.tensor(label, dtype=torch.long), prob1, prob2
 
 
-# class ProteinDataset(Dataset):
-#     def __init__(self, dataframe, tokenizer):
-#         self.sequences = dataframe['Sequence'].values
-#         self.labels = dataframe['Label'].values
-#         self.tokenizer = tokenizer
-
-#     def __len__(self):
-#         return len(self.sequences)
-
-#     def __getitem__(self, idx):
-#         sequence = self.sequences[idx]
-#         label = self.labels[idx]
-#         inputs = self.tokenizer(
-#             sequence,
-#             return_tensors="pt",
-#             padding="max_length",  # Pad to the max length in the tokenizer
-#             truncation=True,       # Truncate sequences that exceed the max length
-#             max_length=1000        # Specify a maximum sequence length (adjust based on your model)
-#         )
-#         return inputs, torch.tensor(label, dtype=torch.long)
-
-
-
-# def loss_fn_kd(outputs, labels, teacher_outputs, alpha=0.5, T=8, device='cuda'):
-#   """
-#   Compute the knowledge-distillation (KD) loss given outputs, labels.
-#   "Hyperparameters": temperature and alpha
-#   NOTE: the KL Divergence for PyTorch comparing the softmaxs of teacher
-#   and student expects the input tensor to be log probabilities! See Issue #2
-#   """
-  
-#   # labels = labels[:,0].type(torch.LongTensor).to(device)
-#   labels = labels.to(device)
-#   KD_loss = nn.KLDivLoss(reduction="batchmean")(F.log_softmax(outputs/T, dim=1),
-#                             F.softmax(teacher_outputs/T, dim=1)) 
-#   CE_loss = F.cross_entropy(outputs, labels) 
-#   loss_all = KD_loss * (alpha) + CE_loss * (1. - alpha)
-#   iii = random.randint(1, 5000)  
-#   if iii==2:
-#     print("KD_loss: ", KD_loss)
-#     print("CE_loss: ", CE_loss)
-
-#   return loss_all
-
 
 def loss_fn_kd_mix(outputs, labels, outputs_T1, outputs_T2, alpha=0.5, T=8, device='cuda'):
   """
@@ -398,40 +334,21 @@ def entr(prob):
 
 from torch.special import gammaln  # PyTorch has gammaln, which is log(gamma)
 def multivariate_beta_torch(alpha):
-    """
-    Calculate the multivariate Beta function B(alpha_1, alpha_2, ..., alpha_k) for a batch of data points.
-
-    :param alpha: PyTorch tensor of shape [batch_size, num_classes]
-    :return: A PyTorch tensor of shape [batch_size], where each entry is the multivariate Beta function for that data point
-    """
-    # Numerator: sum of log(gamma(alpha_i)) for each data point in the batch
     log_numerator = torch.sum(gammaln(alpha), dim=1)
-    
-    # Denominator: log(gamma(sum(alpha_i))) for each data point in the batch
     log_denominator = gammaln(torch.sum(alpha, dim=1))
     
-    # Multivariate beta is the exponentiated difference of the log numerator and log denominator
     return torch.exp(log_numerator - log_denominator)
 
 def multivariate_beta_log(alpha):
     return torch.sum(gammaln(alpha), dim=1) - gammaln(torch.sum(alpha, dim=1))
 
-# def entr(prob):
-#   tmp = torch.exp(prob - torch.max(prob, dim=1, keepdim=True)[0])
-#   prob = tmp / tmp.sum(dim=1, keepdim=True)
-#   entropy = -torch.sum(prob * torch.log2(prob + 1e-9), dim=1)  # Sum across columns
-#   return entropy
-
 
 def loss_fn_kd_mix_weighted(outputs, labels, outputs_T1, outputs_T2, alpha=0.5, T=8, device='cuda'):
   """
-  Compute the knowledge-distillation (KD) loss given outputs, labels.
+  Compute the loss 
   "Hyperparameters": temperature and alpha
-  NOTE: the KL Divergence for PyTorch comparing the softmaxs of teacher
-  and student expects the input tensor to be log probabilities! See Issue #2
   """
   
-  # labels = labels[:,0].type(torch.LongTensor).to(device)
   labels = labels.to(device)
   
   tmp1 = entr(outputs_T1); tmp2 = entr(outputs_T2); 
@@ -440,79 +357,26 @@ def loss_fn_kd_mix_weighted(outputs, labels, outputs_T1, outputs_T2, alpha=0.5, 
   w2 = (1 - tmp2 / aa).detach()
   
   weights = torch.stack([w1, w2], dim=0)  # Shape [2, 32]
-  # print("weights: ", weights)
   normalized_weights = weights / weights.sum(dim=0, keepdim=True)
   
   lambda_const = 5
   
   CE_loss_1 = ( lambda_const*F.softmax(outputs_T1 / T, dim=1) * F.log_softmax(outputs / T, dim=1)).sum(dim=1)
   CE_loss_2 = ( lambda_const*F.softmax(outputs_T2 / T, dim=1) * F.log_softmax(outputs / T, dim=1)).sum(dim=1)
-  # CE_loss_3 = ( lambda_const*F.softmax(outputs_T3 / T, dim=1) * F.log_softmax(outputs / T, dim=1)).sum(dim=1)
-  
   
   ##---
   Beta_1_log = multivariate_beta_log(1 + lambda_const * F.softmax(outputs_T1/T, dim=1) )
   Beta_2_log = multivariate_beta_log(1 + lambda_const * F.softmax(outputs_T2/T, dim=1) )
-  # Beta_3_log = multivariate_beta_log(1 + lambda_const * F.softmax(outputs_T3/T, dim=1) )
   l1 = torch.exp(-Beta_1_log.to(device) + CE_loss_1)
   l2 = torch.exp(-Beta_2_log.to(device) + CE_loss_2)
-  # l3 = torch.exp(-Beta_3_log.to(device) + CE_loss_3)
-  # print("l1.shape: ", l1.shape) # torch.Size([32])
   
   ll_weighted = normalized_weights[0, :] * l1 + normalized_weights[1, :] * l2 
-  # total_weights = normalized_weights[0, :] + normalized_weights[1, :]
-  # ll_weighted = weighted_sum / total_weights
-  # print("ll_weighted.shape: ", ll_weighted.shape) # torch.Size([32])
   
   CE_loss_weighted = -0.002*torch.log(ll_weighted) + 1
-  # print("CE_loss_weighted: ", CE_loss_weighted)
   ##---
   
-  # ##---
-  # sample_indices = torch.randint(low=0, high=2, size=(outputs.shape[0],)).to(device)
-  # # mask1 = (sample_indices == 0).float()  # Creates a mask where sampled index is 0
-  # mask1 = (sample_indices == 0).float() 
-  # mask2 = (sample_indices == 1).float()
-  # l1 = torch.exp(CE_loss_1)
-  # l2 = torch.exp(CE_loss_2)
-  # # ll_weighted = torch.log(l1 * 0.5 + l2 * 0.5)
-  # ll_weighted = torch.log(l1 * mask1.unsqueeze(1) + l2 * mask2.unsqueeze(1))
-  # CE_loss_weighted = ll_weighted
-  # ##---
-  
   KD_loss = CE_loss_weighted * alpha + F.cross_entropy(outputs, labels, reduction="none")
-  # print("orig loss: ", F.cross_entropy(outputs, labels, reduction="none") )
   
-  #----
-  # KD_loss = nn.KLDivLoss(reduction="none")(F.log_softmax(outputs/T, dim=1),
-  #                           F.softmax(outputs_T1/T, dim=1)).sum(dim=1) * (alpha) * w1 * 1.5 + \
-  #           nn.KLDivLoss(reduction="none")(F.log_softmax(outputs/T, dim=1),
-  #                           F.softmax(outputs_T2/T, dim=1)).sum(dim=1) * (alpha) * w2 * 1.5 + \
-  #           nn.KLDivLoss(reduction="none")(F.log_softmax(outputs/T, dim=1),
-  #                           F.softmax(outputs_T3/T, dim=1)).sum(dim=1) * (alpha) * w3 * 1.5 + \
-  #           3*F.cross_entropy(outputs, labels, reduction="none") * (1. - alpha)
-  
-  # l1 = nn.KLDivLoss(reduction="none")(F.log_softmax(outputs/T, dim=1),
-  #                           F.softmax(outputs_T1/T, dim=1)).sum(dim=1) * (alpha) * w1 * 1.5
-  # l2 = 3*F.cross_entropy(outputs, labels, reduction="none") * (1. - alpha)
-  #----
-  
-  iii = random.randint(1, 500)  
-  if iii==2:
-    # print("l1=", l1)
-    # print("l2=", l2)
-    print("w1=", w1)
-    print("w2=", w2)
-    # print("w3=", w3)
-    print("Beta_1_log: ", Beta_1_log)
-    print("l1: ", l1)
-    print("l2: ", l2)
-    # print("labels: ", labels)
-    # print("outputs: ", outputs)
-    # print("teacher outputs T1: ", outputs_T1)
-    print("CE_loss_weighted: ", CE_loss_weighted)
-    print("orig loss: ", F.cross_entropy(outputs, labels, reduction="none"))
-
   return KD_loss.mean()
 
 
@@ -544,11 +408,6 @@ def sample_par_with_KD_mix(trainloader, model_upd, loss_function, optimizer, dev
     # Perform forward pass
     output_1 = model_upd(inputs)
     
-    # with torch.no_grad():
-    #   output_T1 = model_T1(inputs)
-    #   output_T2 = model_T2(inputs)
-    #   output_T3 = model_T3(inputs)
-    
     loss = loss_function(outputs=output_1, labels=labels, outputs_T1=output_T1, outputs_T2=output_T2, alpha=alpha, T=T, device=device)
     
     # Perform backward pass
@@ -573,11 +432,8 @@ def sample_par_with_KD_mix(trainloader, model_upd, loss_function, optimizer, dev
         tmp = -epsilon_1*ssize*param.grad + epsilon_2*noise
         param.add_(tmp)
 
-      # print("grad:", inputs.shape[0]*param.grad)
-      # print("noise:", noise)
     original_state = copy.deepcopy(model_upd.state_dict())
     #---------------
-    # pars_new = copy.deepcopy(list(model_upd.parameters()))
     pars_new = copy.deepcopy(model_upd.state_dict())
     #print("---------pars_new:", pars_new)
     pars_new_list.append(pars_new)
@@ -593,7 +449,7 @@ def sample_par_with_KD_mix(trainloader, model_upd, loss_function, optimizer, dev
 
 ##--------------------------------------
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser('YOLOS training and evaluation script', parents=[get_args_parser()])
+  parser = argparse.ArgumentParser('BKD training and evaluation script', parents=[get_args_parser()])
   args = parser.parse_args()
   # if args.output_dir:
   #     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
