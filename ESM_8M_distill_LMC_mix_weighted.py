@@ -54,8 +54,8 @@ def get_args_parser():
     parser.add_argument('--path_plot',default='./plot_student/')
     parser.add_argument('--student_dir',default='./student_model_distill/')
     parser.add_argument('--LMC_params',default='./LMC_params_mix_weighted/')
-    parser.add_argument('--traindata_dir',default="./Datasets/deeploc/data_our/data_our_train.csv")
-    parser.add_argument('--testdata_dir',default="./Datasets/deeploc/data_our/data_our_test.csv")
+    parser.add_argument('--traindata_dir',default="./data/data_our_train.csv")
+    parser.add_argument('--testdata_dir',default="./data/data_our_test.csv")
     
     return parser
   
