@@ -5,3 +5,5 @@ nohup python ESM_8M_distill_LMC_mix_weighted.py --epoch 200 --traindata_dir "./d
 
 nohup python ESM_8M_inference_p.py --epoch 200 --batch_size 64 --pred_dir './result_pred_p_mix_weighted' --LMC_params './LMC_params_mix_weighted/' > ./log_pred/ESM_8M_inference_epoch200_mix_weighte.log < /dev/null &
 
+# for multiple label data:
+nohup python ESM_8M_inference_p.py --epoch 200 --batch_size 64 --testdata_dir "./data/data_MuLabel_sub.csv" --pred_dir './result_pred_p_mix_weighted_Mul' --LMC_params './LMC_params_mix_weighted/' > ./log_pred/ESM_8M_inference_epoch200_mix_weighte_Mul.log < /dev/null &
