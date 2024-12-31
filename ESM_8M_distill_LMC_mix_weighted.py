@@ -1,12 +1,11 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, Subset
-from sklearn.datasets import load_boston
-from sklearn.preprocessing import StandardScaler
+# from sklearn.datasets import load_boston
+# from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 
 import numpy as np
-from scipy.stats import wishart
 import time
 import datetime
 import random
@@ -15,14 +14,8 @@ import os
 from collections import Counter
 import torch.nn.functional as F
 
-# from PIL import Image
-# import torchvision.transforms as transforms
-# from torchvision.models import resnet50
-# from torchvision.models import ResNet50_Weights
-
 import torch.optim as optim
 import torchvision
-# import scheduler
 import pandas as pd
 
 from models import ProteinClassifier
@@ -31,7 +24,7 @@ from sklearn.model_selection import train_test_split
 
 from collections import Counter
 from transformers import AutoTokenizer, EsmModel
-from torchvision import datasets, transforms
+# from torchvision import datasets, transforms
 
 import copy
 
