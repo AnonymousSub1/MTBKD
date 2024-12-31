@@ -1,36 +1,22 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-# from sklearn.datasets import load_boston
-# from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 
 import numpy as np
-# from scipy.stats import wishart
 import time
 import datetime
 import random
-# import matplotlib.pyplot as plt
 import os
 from collections import Counter
 import torch.nn.functional as F
 import pandas as pd
 
-# from PIL import Image
 import torchvision.transforms as transforms
-# from torchvision.models import resnet50
-# from torchvision.models import ResNet50_Weights
-
-# import torch.optim as optim
-# import torchvision
-# import scheduler
-
 from models import ProteinClassifier
 from train_func import train_one_epoch, test_one_epoch
 
-# from collections import Counter
 from transformers import AutoTokenizer, EsmModel
-# from torchvision import datasets, transforms
 
 import copy
 
@@ -39,11 +25,10 @@ import argparse
 
 ## pars
 def get_args_parser():
-    parser = argparse.ArgumentParser('Set YOLOS', add_help=False)
+    parser = argparse.ArgumentParser('Set BKD', add_help=False)
     parser.add_argument('--lr', default=1e-4, type=float,
                         help='learning rate')
-    # parser.add_argument('--KD', action='store_true',
-    #                     help='use KD or not (default: True)')
+
     parser.add_argument('--lr_drop', default=0.1, type=float)  
     parser.add_argument('--epoch', default=100, type=int)  
     parser.add_argument('--KD_epoch', default=50, type=int)  
@@ -60,16 +45,9 @@ def get_args_parser():
     parser.add_argument('--device', default='cuda')
     
     parser.add_argument('--path_plot',default='./plot_student/')
-    # parser.add_argument('--pretrained_teacher_dir',default='./teacher_model_pretrain/pretrain_100epoch.pth')
-    # parser.add_argument('--student_dir',default='./student_model_distill/')
     parser.add_argument('--LMC_params',default='./LMC_params/')
     parser.add_argument('--testdata_dir',default="./Datasets/deeploc/data_our/data_our_test.csv")
-    
     parser.add_argument('--pred_dir',default='./result_pred_p')
-    # parser.add_argument('--data_dir',default='/home/stat/Luyang/Multi_BKD/differ_dat/data-digit5/')
-    
-    ## dataset
-    # parser.add_argument('--dataset_test',default='mnist_m')
 
     return parser
   
@@ -128,7 +106,7 @@ def main(args):
     if epoch>=args.KD_epoch:
       ###--- 
       pars = torch.load(args.LMC_params+"LMC_params_epoch"+str(epoch)+".pth")
-      idx_random = random.sample(range(len(pars)), int(0.2*len(pars)))
+      idx_random = random.sample(range(len(pars)), int(0.2*len(pars))) # sample
       
       ###--- (2) calculate p
       pred_p_list_ep = get_infer_p(test_loader=test_loader, model_params_ep=pars, model_student=model_infer, device=device, idx_random=idx_random)
@@ -146,8 +124,6 @@ def main(args):
   #torch.save(model_param_list, param_path) 
   
   #-- save infered p
-  # torch.save(pred_p_all, pred_dir+'/pred_p_all_epoch'+str(args.epoch)+'.pth')
-  # np.savetxt(pred_dir+'/pred_p_all_epoch'+str(args.epoch)+'.csv', pred_p_all, delimiter=",")
   torch.save(pred_p_list_all, pred_dir+'/pred_p_list_all_epoch'+str(args.epoch)+'.pth')
     
   #
@@ -219,7 +195,7 @@ def get_infer_p(test_loader, model_params_ep, model_student, device, idx_random)
 
 #-------------------------------
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser('YOLOS training and evaluation script', parents=[get_args_parser()])
+  parser = argparse.ArgumentParser('BKD training and evaluation script', parents=[get_args_parser()])
   args = parser.parse_args()
   # if args.output_dir:
   #     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
