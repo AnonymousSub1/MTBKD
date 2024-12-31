@@ -31,7 +31,7 @@ def get_args_parser():
 
     parser.add_argument('--lr_drop', default=0.1, type=float)  
     parser.add_argument('--epoch', default=100, type=int)  
-    parser.add_argument('--KD_epoch', default=50, type=int)  
+    parser.add_argument('--KD_epoch', default=120, type=int)  
     parser.add_argument('--num_classes', default=10, type=int)
     parser.add_argument('--hidden_size', default=128, type=int)
     parser.add_argument('--alpha',default=0.3, type=float)
@@ -84,19 +84,11 @@ def main(args):
   
   print("----student model structure:")
   print(model_infer)
-  # print(list(model.parameters()))
-  
   
   # Run the training loop
   random.seed(2024)
   
   pred_p_list_all = []
-  # pred_p_all = np.empty([len(test_dataset),0])
-
-  # student_dir_save = args.student_dir
-  # os.makedirs(student_dir_save, exist_ok=True)
-  # student_dir_save = Path(student_dir_save)
-  
 
   print('--------Training starts!')
   start_time=time.time()
@@ -115,14 +107,6 @@ def main(args):
       print('EPOCH:%d  Inference Used Time:%s'
             %(epoch, str(datetime.timedelta(seconds=int(time.time()-start_time)))))
       
-      #-- save infered p
-      # torch.save(pred_p_list_ep, pred_dir+'/pred_p_list_ep'+str(epoch)+'.pth')
-      # torch.save(pred_p_list_all, pred_dir+'/pred_p_list_all_epoch'+str(args.epoch)+'.pth')
-    
-  
-  #param_path = student_dir_save / 'student_params.pth'
-  #torch.save(model_param_list, param_path) 
-  
   #-- save infered p
   torch.save(pred_p_list_all, pred_dir+'/pred_p_list_all_epoch'+str(args.epoch)+'.pth')
     
